@@ -34,4 +34,4 @@ const revert = (file: string, version: number) => {
     );
 };
 
-revert(__dirname + "/temp copy.prproj", 18);
+export default revert;

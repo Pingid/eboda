@@ -1,53 +1,76 @@
-import { APIGatewayProxyHandler, APIGatewayProxyEvent } from "aws-lambda";
+import { APIGatewayProxyHandler } from "aws-lambda";
+import AWS from "aws-sdk";
 import "source-map-support/register";
 
-import { createWriteStream } from "fs";
+import { writeFile, exists, mkdir, readFile } from "fs";
+import { promisify } from "util";
+import revert from "./revert";
 import { join } from "path";
 
-import busboy from "busboy";
+const bucket = "premier-version-revert-upload";
 
-const writeFileBB = (
-  event: APIGatewayProxyEvent
-): Promise<{
-  filename: string;
-  encoding: string;
-  mimetype: string;
-}> => {
-  const bb = new busboy({
-    headers: { ...event.headers, "content-type": event.headers["Content-Type"] }
-  });
+export const requestUploadURL: APIGatewayProxyHandler = (event, _context) => {
+  const s3 = new AWS.S3();
+  const params = JSON.parse(event.body);
 
-  return new Promise((resolve, reject) => {
-    let res;
+  const s3Params = {
+    Bucket: bucket,
+    Key: `uploads/${params.name}`,
+    ContentType: params.type,
+    ACL: "public-read"
+  };
 
-    bb.on("file", function(_fieldname, file, filename, encoding, mimetype) {
-      const saveTo = join("./tmp", filename);
-      res = { filename, encoding, mimetype };
-      console.log(res);
-      let stream = createWriteStream(saveTo);
-      file.pipe(stream);
-      stream.on("close", () => {
-        resolve(res);
-      });
-    });
-    bb.on("error", reject);
-    bb.end(event.body);
+  const uploadURL = s3.getSignedUrl("putObject", s3Params);
+
+  return Promise.resolve({
+    statusCode: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*"
+    },
+    body: JSON.stringify({ uploadURL: uploadURL })
   });
 };
 
-export const upload: APIGatewayProxyHandler = async (event, _context) =>
-  Promise.resolve()
-    .then(() => writeFileBB(event))
-    .then(file => {
-      const { filename } = file;
-      console.log(filename);
-      return filename;
+export const process: APIGatewayProxyHandler = (event, _context) => {
+  const { name, version } = JSON.parse(event.body);
+  const tempDir = join(__dirname, "tmp");
+  const s3 = new AWS.S3();
+
+  return s3
+    .getObject({
+      Bucket: bucket,
+      Key: `uploads/${name}`
     })
-    .then(() => ({
+    .promise()
+    .then(res =>
+      promisify(exists)(tempDir)
+        .then(does => (!does ? promisify(mkdir)(tempDir) : null))
+        .then(() => promisify(writeFile)(join(tempDir, name), res.Body))
+    )
+    .then(() => revert(join(tempDir, name), version))
+    .then(() => promisify(readFile)(join(tempDir, name)))
+    .then(buffer =>
+      s3
+        .putObject({
+          Bucket: bucket,
+          Key: `downloads/${name}`,
+          Body: buffer
+        })
+        .promise()
+    )
+    .then(() =>
+      s3.getSignedUrl("getObject", {
+        Bucket: bucket,
+        Key: `downloads/${name}`
+      })
+    )
+    .then(url => ({
       statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*"
+      },
       body: JSON.stringify({
-        message:
-          "Go Serverless Webpack (Typescript) v1.0! Your function executed successfully!",
-        input: event
+        url
       })
     }));
+};

@@ -1,5 +1,6 @@
 const path = require("path");
 const slsw = require("serverless-webpack");
+const MakeDirWebpackPlugin = require("make-dir-webpack-plugin");
 
 module.exports = {
   mode: slsw.lib.webpack.isLocal ? "development" : "production",
@@ -20,9 +21,9 @@ module.exports = {
       { test: /\.tsx?$/, loader: "ts-loader" }
     ]
   },
-  externals: [
-    {
-      formidable: "commonjs formidable"
-    }
+  plugins: [
+    new MakeDirWebpackPlugin({
+      dirs: [{ path: "./tmp" }]
+    })
   ]
 };
