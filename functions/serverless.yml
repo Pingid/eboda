@@ -21,6 +21,14 @@ provider:
       Resource: "arn:aws:s3:::premier-version-revert-upload/*"
 
 functions:
+  clean:
+    handler: handler.clean
+    events:
+      - http:
+          path: clean
+          method: get
+          cors: true
+
   process:
     handler: handler.process
     events:

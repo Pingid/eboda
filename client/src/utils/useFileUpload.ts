@@ -49,6 +49,7 @@ const useFileUpload = () => {
         .then(({ data }: { data: { url: string } }) => {
           setNetwork("done");
           setUrl(data.url);
+          fetch(apiBaseURL + "/clean");
         });
     });
     reader.readAsArrayBuffer(file);

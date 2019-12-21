@@ -59,6 +59,9 @@ export const process: APIGatewayProxyHandler = (event, _context) => {
         .promise()
     )
     .then(() =>
+      s3.deleteObject({ Bucket: bucket, Key: `uploads/${name}` }).promise()
+    )
+    .then(() =>
       s3.getSignedUrl("getObject", {
         Bucket: bucket,
         Key: `downloads/${name}`
@@ -72,5 +75,30 @@ export const process: APIGatewayProxyHandler = (event, _context) => {
       body: JSON.stringify({
         url
       })
+    }));
+};
+
+export const clean: APIGatewayProxyHandler = (_event, _context) => {
+  const s3 = new AWS.S3();
+
+  return s3
+    .listObjects({ Bucket: bucket })
+    .promise()
+    .then(({ Contents }) =>
+      Promise.all(
+        Contents.filter(
+          obj =>
+            (new Date().valueOf() - new Date(obj.LastModified).valueOf()) /
+              1000 /
+              60 >
+            30
+        ).map(obj =>
+          s3.deleteObject({ Bucket: bucket, Key: obj.Key }).promise()
+        )
+      )
+    )
+    .then(res => ({
+      statusCode: 200,
+      body: `Delete ${res.length} objects`
     }));
 };
