@@ -8,7 +8,7 @@ import { join } from "path";
 
 import revert from "./revert";
 
-const bucket = "premier-version-revert-upload";
+const bucket = "eboda-upload";
 
 export const requestUploadURL: APIGatewayProxyHandler = (event, _context) => {
   const s3 = new AWS.S3();
