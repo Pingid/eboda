@@ -11,6 +11,7 @@
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
     "react-dropzone": "^10.2.1",
+    "react-helmet": "^5.2.1",
     "react-scripts": "3.0.1",
     "typescript": "3.5.2"
   },
@@ -37,6 +38,7 @@
     ]
   },
   "devDependencies": {
+    "@types/react-helmet": "^5.0.14",
     "react-snap": "^1.23.0"
   }
 }
