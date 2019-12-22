@@ -50,6 +50,10 @@ const useFileUpload = () => {
           setNetwork("done");
           setUrl(data.url);
           fetch(apiBaseURL + "/clean");
+        })
+        .catch(err => {
+          setNetwork("error");
+          console.error(err);
         });
     });
     reader.readAsArrayBuffer(file);
