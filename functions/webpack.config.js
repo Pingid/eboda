@@ -1,6 +1,5 @@
 const path = require("path");
 const slsw = require("serverless-webpack");
-const MakeDirWebpackPlugin = require("make-dir-webpack-plugin");
 
 module.exports = {
   mode: slsw.lib.webpack.isLocal ? "development" : "production",

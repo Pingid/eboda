@@ -4,8 +4,9 @@ import "source-map-support/register";
 
 import { writeFile, exists, mkdir, readFile } from "fs";
 import { promisify } from "util";
-import revert from "./revert";
 import { join } from "path";
+
+import revert from "./revert";
 
 const bucket = "premier-version-revert-upload";
 

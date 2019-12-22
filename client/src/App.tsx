@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import useFileUpload from '../utils/useFileUpload';
+import useFileUpload from './utils/useFileUpload';
 import { Helmet } from 'react-helmet'
 
 const HideMe = ({ visible, children }: { visible: boolean, children: React.ReactNode }) => <div className={'hide ' + (visible ? '' : 'me')}>{children}</div>
@@ -16,7 +16,7 @@ const App = () => {
       <Helmet>
         <meta charSet="utf-8" />
         <title>eboda</title>
-        <meta name="description" content="Fix 'The project was saved in a newer version' broken adobe premier, illustrator, photoshop ... files "></meta>
+        <meta name="description" content="Fix the adobe error 'The project was saved in a newer version'. Works for adobe premier pro, illustrator, photoshop, indesign..."></meta>
       </Helmet>
       <p className="about">fix adobe files that wont open on older software versions</p>
       <input {...getInputProps()} />

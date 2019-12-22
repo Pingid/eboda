@@ -15,7 +15,7 @@ const useFileUpload = () => {
   const [url, setUrl] = useState<null | string>(null);
 
   const apiBaseURL =
-    "https://8pknfrh2s5.execute-api.us-east-1.amazonaws.com/dev";
+    "https://1j2rt0eug2.execute-api.eu-west-2.amazonaws.com/dev";
 
   const upload = useCallback((file: File) => {
     var reader = new FileReader();
