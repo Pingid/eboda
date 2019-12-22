@@ -2,11 +2,8 @@ import { APIGatewayProxyHandler } from "aws-lambda";
 import AWS from "aws-sdk";
 import "source-map-support/register";
 
-import { writeFile, exists, mkdir, readFile } from "fs";
 import { promisify } from "util";
-import { join } from "path";
-
-import revert from "./revert";
+import { gunzip, gzip } from "zlib";
 
 const bucket = "eboda-upload";
 
@@ -34,22 +31,30 @@ export const requestUploadURL: APIGatewayProxyHandler = (event, _context) => {
 
 export const process: APIGatewayProxyHandler = (event, _context) => {
   const { name, version } = JSON.parse(event.body);
-  const tempDir = join(__dirname, "tmp");
+  const reg = /(<Project ObjectID="\d{1,}"\sClassID=".*?"\sVersion=")(\d{1,})(">)/;
+
   const s3 = new AWS.S3();
 
-  return s3
-    .getObject({
-      Bucket: bucket,
-      Key: `uploads/${name}`
-    })
-    .promise()
-    .then(res =>
-      promisify(exists)(tempDir)
-        .then(does => (!does ? promisify(mkdir)(tempDir) : null))
-        .then(() => promisify(writeFile)(join(tempDir, name), res.Body))
+  return Promise.resolve()
+    .then(() =>
+      s3
+        .getObject({
+          Bucket: bucket,
+          Key: `uploads/${name}`
+        })
+        .promise()
     )
-    .then(() => revert(join(tempDir, name), version))
-    .then(() => promisify(readFile)(join(tempDir, name)))
+    .then(res =>
+      Promise.resolve(res.Body)
+        .then(promisify(gunzip))
+        .then(buff =>
+          buff.toString().replace(reg, (_, a, b, c) => {
+            let n = parseInt(b) - version;
+            return a + n + c;
+          })
+        )
+        .then(str => promisify(gzip)(str))
+    )
     .then(buffer =>
       s3
         .putObject({
@@ -76,7 +81,17 @@ export const process: APIGatewayProxyHandler = (event, _context) => {
       body: JSON.stringify({
         url
       })
-    }));
+    }))
+    .catch(err => {
+      console.error(err);
+      return {
+        statusCode: 400,
+        headers: {
+          "Access-Control-Allow-Origin": "*"
+        },
+        body: err.message
+      };
+    });
 };
 
 export const clean: APIGatewayProxyHandler = (_event, _context) => {

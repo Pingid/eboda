@@ -4,7 +4,8 @@
   "description": "Eboda serverless backend",
   "main": "handler.js",
   "dependencies": {
-    "source-map-support": "^0.5.10"
+    "source-map-support": "^0.5.10",
+    "zlib": "^1.0.5"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.17",
