@@ -99,6 +99,9 @@ export const clean: APIGatewayProxyHandler = (_event, _context) => {
     )
     .then(res => ({
       statusCode: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "*"
+      },
       body: `Delete ${res.length} objects`
     }));
 };
