@@ -1,0 +1,4 @@
+/api/*  https://3glg5p6xq7.execute-api.eu-west-2.amazonaws.com/dev/:splat  200
+
+/* /index.html 200
+

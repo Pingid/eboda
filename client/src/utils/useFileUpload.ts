@@ -14,14 +14,13 @@ const useFileUpload = () => {
   const [network, setNetwork] = useState<Status>("ready");
   const [url, setUrl] = useState<null | string>(null);
 
-  const apiBaseURL =
-    "https://3glg5p6xq7.execute-api.eu-west-2.amazonaws.com/dev";
+  const apiBaseURL = "/api";
 
   const upload = useCallback((file: File) => {
     var reader = new FileReader();
     reader.addEventListener("loadend", () => {
       const blob = new Blob([reader.result as ArrayBuffer], {
-        type: file.type
+        type: file.type,
       });
 
       setNetwork("requestURL");
@@ -29,21 +28,21 @@ const useFileUpload = () => {
       axios
         .post(apiBaseURL + "/requestUploadURL", {
           name: file.name,
-          type: file.type
+          type: file.type,
         })
         .then(({ data }: any) => {
           setNetwork("uploading");
           return axios.put(data.uploadURL, blob, {
             headers: { "content-type": blob.type },
-            onUploadProgress: p =>
-              setProgress(Math.round((p.loaded / p.total) * 100))
+            onUploadProgress: (p) =>
+              setProgress(Math.round((p.loaded / p.total) * 100)),
           });
         })
         .then(() => {
           setNetwork("processing");
           return axios.post(apiBaseURL + "/process", {
             name: file.name,
-            version: 10
+            version: 10,
           });
         })
         .then(({ data }: { data: { url: string } }) => {
@@ -51,7 +50,7 @@ const useFileUpload = () => {
           setUrl(data.url);
           fetch(apiBaseURL + "/clean");
         })
-        .catch(err => {
+        .catch((err) => {
           setNetwork("error");
           console.error(err);
         });

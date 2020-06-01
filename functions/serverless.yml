@@ -15,7 +15,6 @@ provider:
   runtime: nodejs10.x
   region: eu-west-2
   stage: ${opt:stage, 'dev'}
-  profile: serverless
   timeout: 30
   iamRoleStatements:
     - Effect: "Allow"
