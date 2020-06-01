@@ -2,7 +2,7 @@ import { APIGatewayProxyHandler } from "aws-lambda";
 import AWS from "aws-sdk";
 import "source-map-support/register";
 
-import { promisify } from "util";
+import { promisify, TextEncoder } from "util";
 import { gunzip, gzip } from "zlib";
 
 const bucket = "eboda-upload";
@@ -15,7 +15,7 @@ export const requestUploadURL: APIGatewayProxyHandler = (event, _context) => {
     Bucket: bucket,
     Key: `uploads/${params.name}`,
     ContentType: params.type,
-    ACL: "public-read"
+    ACL: "public-read",
   };
 
   const uploadURL = s3.getSignedUrl("putObject", s3Params);
@@ -23,9 +23,9 @@ export const requestUploadURL: APIGatewayProxyHandler = (event, _context) => {
   return Promise.resolve({
     statusCode: 200,
     headers: {
-      "Access-Control-Allow-Origin": "*"
+      "Access-Control-Allow-Origin": "*",
     },
-    body: JSON.stringify({ uploadURL: uploadURL })
+    body: JSON.stringify({ uploadURL: uploadURL }),
   });
 };
 
@@ -40,27 +40,33 @@ export const process: APIGatewayProxyHandler = (event, _context) => {
       s3
         .getObject({
           Bucket: bucket,
-          Key: `uploads/${name}`
+          Key: `uploads/${name}`,
         })
         .promise()
     )
-    .then(res =>
+    .then((res) =>
       Promise.resolve(res.Body)
         .then(promisify(gunzip))
-        .then(buff =>
-          buff.toString().replace(reg, (_, a, b, c) => {
-            let n = parseInt(b) - version;
+        .then((x: Buffer) => {
+          const utf8encoder = new TextEncoder();
+
+          const slice = x.slice(0, 512);
+          const rest = x.slice(512, x.byteLength);
+          const decoded = slice.toString().replace(reg, (_, a, b, c) => {
+            let n = parseInt(b) - version || 0;
             return a + n + c;
-          })
-        )
-        .then(str => promisify(gzip)(str))
+          });
+
+          return Buffer.concat([utf8encoder.encode(decoded), rest]);
+        })
+        .then((str) => promisify(gzip)(str))
     )
-    .then(buffer =>
+    .then((buffer) =>
       s3
         .putObject({
           Bucket: bucket,
           Key: `downloads/${name}`,
-          Body: buffer
+          Body: buffer,
         })
         .promise()
     )
@@ -70,26 +76,26 @@ export const process: APIGatewayProxyHandler = (event, _context) => {
     .then(() =>
       s3.getSignedUrl("getObject", {
         Bucket: bucket,
-        Key: `downloads/${name}`
+        Key: `downloads/${name}`,
       })
     )
-    .then(url => ({
+    .then((url) => ({
       statusCode: 200,
       headers: {
-        "Access-Control-Allow-Origin": "*"
+        "Access-Control-Allow-Origin": "*",
       },
       body: JSON.stringify({
-        url
-      })
+        url,
+      }),
     }))
-    .catch(err => {
+    .catch((err) => {
       console.error(err);
       return {
         statusCode: 400,
         headers: {
-          "Access-Control-Allow-Origin": "*"
+          "Access-Control-Allow-Origin": "*",
         },
-        body: err.message
+        body: err.message,
       };
     });
 };
@@ -103,21 +109,21 @@ export const clean: APIGatewayProxyHandler = (_event, _context) => {
     .then(({ Contents }) =>
       Promise.all(
         Contents.filter(
-          obj =>
+          (obj) =>
             (new Date().valueOf() - new Date(obj.LastModified).valueOf()) /
               1000 /
               60 >
             30
-        ).map(obj =>
+        ).map((obj) =>
           s3.deleteObject({ Bucket: bucket, Key: obj.Key }).promise()
         )
       )
     )
-    .then(res => ({
+    .then((res) => ({
       statusCode: 200,
       headers: {
-        "Access-Control-Allow-Origin": "*"
+        "Access-Control-Allow-Origin": "*",
       },
-      body: `Delete ${res.length} objects`
+      body: `Delete ${res.length} objects`,
     }));
 };

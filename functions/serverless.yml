@@ -33,6 +33,7 @@ functions:
 
   process:
     handler: handler.process
+    memorySize: 3008
     events:
       - http:
           path: process
